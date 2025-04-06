@@ -118,55 +118,47 @@ class RESNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.dropout(x)
         x = self.fc(x)
-        return x #.squeeze(1)  # حذف بعد اضافی برای سازگاری با BCEWithLogitsLoss
+        return x 
 
 
 
 
 
 
-# تنظیم مسیر دیتاست
+
 base_path = "Dataset/Brain Tumor MRI images"
 
-# تعریف پردازش‌های اعمال‌شده روی تصاویر
+
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 ])
 
-# لود دیتاست
 full_dataset = datasets.ImageFolder(root=base_path, transform=transform)
 
-# تقسیم دیتاست به train و validation
-train_size = int(0.8 * len(full_dataset))  # 80% برای آموزش
-valid_size = len(full_dataset) - train_size  # 20% برای اعتبارسنجی
+train_size = int(0.8 * len(full_dataset)) 
+valid_size = len(full_dataset) - train_size  
 train_dataset, valid_dataset = random_split(full_dataset, [train_size, valid_size])
 
-# ساخت DataLoader
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 valid_loader = DataLoader(valid_dataset, batch_size=16, shuffle=False)
 
-# تعریف مدل
 model = RESNet(num_classes=1)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# تعریف تابع هزینه و بهینه‌ساز
 criterion = nn.BCEWithLogitsLoss()
-# criterion = nn.CrossEntropyLoss()
 
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-# حلقه آموزش
 num_epochs = 10
 for epoch in range(num_epochs):
     model.train()
     train_loss, correct, total = 0, 0, 0
     
     for images, labels in train_loader:
-        images, labels = images.to(device), labels.to(device).float().unsqueeze(1)  # تبدیل لیبل به شکل (batch_size, 1)
-
+        images, labels = images.to(device), labels.to(device).float().unsqueeze(1) 
         
         optimizer.zero_grad()
         outputs = model(images)
@@ -182,7 +174,6 @@ for epoch in range(num_epochs):
     train_acc = 100 * correct / total
     print(f"Epoch {epoch+1}/{num_epochs}, Loss: {train_loss/len(train_loader):.4f}, Accuracy: {train_acc:.2f}%")
 
-# ارزیابی مدل
 model.eval()
 valid_loss, correct, total = 0, 0, 0
 with torch.no_grad():
@@ -215,7 +206,6 @@ def evaluate_model(model, dataloader):
             all_preds.extend(predictions)
             all_labels.extend(labels.cpu().numpy().astype(int).flatten())
 
-    # نمایش Confusion Matrix
     conf_matrix = confusion_matrix(all_labels, all_preds)
     plt.figure(figsize=(6, 5))
     sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=["Non Tumor", "Tumor"], yticklabels=["Non Tumor", "Tumor"])
@@ -224,9 +214,7 @@ def evaluate_model(model, dataloader):
     plt.title('Confusion Matrix')
     plt.show()
 
-    # نمایش Classification Report
     print("Classification Report:\n", classification_report(all_labels, all_preds))
 
-# اجرا برای داده‌های اعتبارسنجی
 evaluate_model(model, valid_loader)
 
